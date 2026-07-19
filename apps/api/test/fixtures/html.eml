@@ -1,0 +1,17 @@
+From: "Zoë Sender" <zoe@example.net>
+To: admin@aurens.app
+Subject: HTML safety test
+Message-ID: <html-001@example.net>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="part"
+
+--part
+Content-Type: text/plain; charset=utf-8
+
+Safe fallback text.
+--part
+Content-Type: text/html; charset=utf-8
+
+<html><body onload="alert(1)"><script>alert(1)</script><p>Hello <b>admin</b>.</p><img src="https://tracker.example/pixel.gif" onerror="alert(2)"><a href="javascript:alert(3)">bad</a><form><input></form></body></html>
+--part--
+

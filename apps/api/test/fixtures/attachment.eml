@@ -1,0 +1,25 @@
+From: Files <files@example.org>
+To: pa@aurens.app
+Subject: Your file
+Message-ID: <attachment-001@example.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mixed"
+
+--mixed
+Content-Type: text/plain; charset=utf-8
+
+Attached.
+--mixed
+Content-Type: text/plain; name="../../notes.txt"
+Content-Disposition: attachment; filename="../../notes.txt"
+Content-Transfer-Encoding: base64
+
+VGhpcyBpcyBhIHRlc3QgYXR0YWNobWVudC4=
+--mixed
+Content-Type: application/x-msdownload; name="invoice.exe"
+Content-Disposition: attachment; filename="invoice.exe"
+Content-Transfer-Encoding: base64
+
+TVqQAA==
+--mixed--
+

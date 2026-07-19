@@ -1,0 +1,22 @@
+# Apply with postconf; this file documents the mail-specific settings.
+myhostname = mail.aurens.app
+mydomain = aurens.app
+myorigin = $mydomain
+inet_interfaces = all
+inet_protocols = ipv4
+mydestination = localhost
+relay_domains = aurens.app
+transport_maps = hash:/etc/postfix/transport
+smtpd_relay_restrictions = permit_mynetworks,reject_unauth_destination
+smtpd_recipient_restrictions = permit_mynetworks,reject_unauth_destination
+disable_vrfy_command = yes
+smtpd_helo_required = yes
+message_size_limit = 26214400
+mailbox_size_limit = 0
+smtpd_tls_security_level = may
+smtpd_tls_cert_file = /etc/letsencrypt/live/mail.aurens.app/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/mail.aurens.app/privkey.pem
+smtpd_tls_loglevel = 1
+smtpd_tls_received_header = yes
+smtp_tls_security_level = may
+

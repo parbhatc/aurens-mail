@@ -1,0 +1,27 @@
+{
+  "name": "aurens-mail",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "npm run build -w @aurens/shared && npm run build -w @aurens/api && npm run build -w @aurens/web",
+    "dev": "concurrently -n api,web \"npm run dev -w @aurens/api\" \"npm run dev -w @aurens/web\"",
+    "typecheck": "npm run build -w @aurens/shared && npm run typecheck -w @aurens/api && npm run typecheck -w @aurens/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "db:migrate": "npm run migrate -w @aurens/api",
+    "db:seed": "npm run seed -w @aurens/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.31.0",
+    "@types/node": "^24.0.14",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.31.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.37.0",
+    "vitest": "^3.2.4"
+  },
+  "engines": { "node": ">=22" }
+}

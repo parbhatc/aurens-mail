@@ -1,0 +1,3 @@
+mail2026._domainkey	IN	TXT	( "v=DKIM1; h=sha256; k=rsa; "
+	  "p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlh8Q4GVYmjJuwrhOV9yJWu72jFsRHTCsBFDIE6h1BS1Tgrmg2LwT4btxSV8RWQ01nvCizPjtopd0G2THfc1S03aH0A7KFecrU0jTitqvnXcH2k4SnHQJVpBba0tag5VGa865mt9xZUni6JzcZhGl6w8ZvXKLgsJcs5G7gcDJCxWeSGfcTO1khfuzHy4XjByCj9RvjVTajejLuo"
+	  "oNFEK2Y6WamaU+HA8srIMcIT2mDtTyQa6CMZKyhEgP8KhBf5ZJ9lF+D4gu/aJDcKeGJvtZQaQiqsMIPlzrCx7mwlNR7T2ruCAkZ9fwmmxrgEyeLHgkOfbPk2pslhnKZr4IMd8gxwIDAQAB" )  ; ----- DKIM key mail2026 for aurens.app
