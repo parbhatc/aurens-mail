@@ -1,4 +1,4 @@
-import type { Folder, Mailbox, MessageDetail, MessageSummary, SessionUser } from "./types";
+import type { Folder, Mailbox, MessageDetail, MessageSummary, SessionUser, TempMailbox, TempMessageDetail, TempMessageSummary } from "./types";
 
 export class ApiError extends Error {
   constructor(public readonly code: string, message: string, public readonly status: number) { super(message); }
@@ -24,6 +24,12 @@ export const api = {
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   mailboxes: () => request<{ mailboxes: Mailbox[] }>("/api/mailboxes"),
   createMailbox: (address: string, displayName: string, isCatchAll: boolean) => request<{ mailbox: Mailbox }>("/api/mailboxes", { method: "POST", body: JSON.stringify({ address, displayName: displayName || undefined, isCatchAll }) }),
+  deleteMailbox: (id: string) => request<void>(`/api/mailboxes/${id}`, { method: "DELETE" }),
+  tempMailboxes: () => request<{ mailboxes: TempMailbox[] }>("/api/temp-mailboxes"),
+  createTempMailbox: (localPart: string, ttlMinutes?: number) => request<{ mailbox: TempMailbox; accessToken: string }>("/api/temp-mailboxes", { method: "POST", body: JSON.stringify({ ...(localPart ? { localPart } : {}), ...(ttlMinutes ? { ttlMinutes } : {}) }) }),
+  deleteTempMailbox: (id: string) => request<void>(`/api/temp-mailboxes/${id}`, { method: "DELETE" }),
+  tempMessages: (id: string) => request<{ messages: TempMessageSummary[] }>(`/api/temp-mailboxes/${id}/messages`),
+  tempMessage: (id: string, messageId: string) => request<{ message: TempMessageDetail }>(`/api/temp-mailboxes/${id}/messages/${messageId}`),
   messages: (params: { mailbox?: string; folder: Folder; search?: string; cursor?: string; starred?: boolean }) => {
     const query = new URLSearchParams({ folder: params.folder });
     if (params.mailbox) query.set("mailbox", params.mailbox);

@@ -12,7 +12,9 @@ export async function resolveMailbox(recipient: string): Promise<MailboxRow | nu
   const result = await pool.query<MailboxRow>(
     `SELECT id, address, is_catch_all
        FROM mailboxes
-      WHERE is_active = true AND (address = $1 OR is_catch_all = true)
+      WHERE is_active = true
+        AND (expires_at IS NULL OR expires_at > now())
+        AND (address = $1 OR is_catch_all = true)
       ORDER BY (address = $1) DESC
       LIMIT 1`,
     [normalized],

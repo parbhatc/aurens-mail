@@ -27,6 +27,7 @@ const configSchema = z.object({
   MAX_ATTACHMENTS: z.coerce.number().int().positive().max(200).default(50),
   TRASH_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
   SPAM_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+  TEMP_MAIL_API_KEY: z.string().min(24).optional(),
   OWNER_EMAIL: z.email().transform((value) => value.toLowerCase()),
   OWNER_PASSWORD: z.string().min(5),
   LOG_LEVEL: z.string().default("info"),

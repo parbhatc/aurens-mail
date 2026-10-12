@@ -20,6 +20,11 @@ export const mailboxPatchSchema = z.object({
   isCatchAll: z.boolean().optional(),
 }).refine((value) => Object.keys(value).length > 0, "At least one field is required");
 
+export const tempMailboxCreateSchema = z.object({
+  localPart: z.string().trim().toLowerCase().regex(/^[a-z0-9](?:[a-z0-9._-]{0,30}[a-z0-9])?$/, "Use letters, numbers, dots, dashes, or underscores").optional(),
+  ttlMinutes: z.coerce.number().int().min(10).max(10_080).optional(),
+});
+
 export const messagePatchSchema = z.object({
   isRead: z.boolean().optional(),
   isStarred: z.boolean().optional(),

@@ -6,6 +6,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { config } from "../config.js";
 import { registerRoutes } from "./routes.js";
+import { registerTempMailRoutes } from "./temp-mail-routes.js";
 
 export async function createHttpServer() {
   const app = Fastify({
@@ -43,6 +44,7 @@ export async function createHttpServer() {
 
   app.get("/health", async () => ({ status: "ok" }));
   await registerRoutes(app);
+  await registerTempMailRoutes(app);
 
   if (config.NODE_ENV === "production") {
     const root = path.resolve("apps/web/dist");

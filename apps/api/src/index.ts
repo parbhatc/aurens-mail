@@ -16,7 +16,7 @@ async function main(): Promise<void> {
   const smtp = createSmtpServer(http.log);
   smtp.listen(config.SMTP_PORT, config.SMTP_HOST, () => http.log.info({ port: config.SMTP_PORT }, "Internal SMTP ingestion listening"));
 
-  const cleanupTimer = setInterval(() => void runRetentionCleanup(http.log), 6 * 60 * 60 * 1000);
+  const cleanupTimer = setInterval(() => void runRetentionCleanup(http.log), 60 * 60 * 1000);
   const orphanTimer = setInterval(() => void runOrphanCleanup(http.log), 24 * 60 * 60 * 1000);
   cleanupTimer.unref(); orphanTimer.unref();
 

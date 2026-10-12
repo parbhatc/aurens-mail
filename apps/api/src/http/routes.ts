@@ -78,9 +78,9 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
               count(m.id) FILTER (WHERE m.folder = 'inbox' AND NOT m.is_read)::int AS unread_count
          FROM mailboxes mb
          LEFT JOIN messages m ON m.mailbox_id = mb.id
-        WHERE $1::boolean OR EXISTS (
+        WHERE mb.is_temporary = false AND ($1::boolean OR EXISTS (
           SELECT 1 FROM user_mailboxes um WHERE um.user_id = $2 AND um.mailbox_id = mb.id
-        )
+        ))
         GROUP BY mb.id ORDER BY mb.address`,
       [canManage(user), user.id],
     );

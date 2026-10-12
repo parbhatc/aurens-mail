@@ -40,6 +40,7 @@ Postfix is the only mail-facing process. The application and object storage list
 - Strict HTML allowlist, script/form/iframe/event removal, dangerous URL removal, blocked remote images, and sandboxed iframe rendering
 - Attachment path normalization, executable warnings, size/count limits, duplicate Message-ID handling, sender allow/block rules, and partial-object cleanup
 - Automatic 30-day trash/spam cleanup, orphan object cleanup, database/object backup script, and structured logs without message contents
+- Disposable mailboxes that remain available until deleted, with a visual HTML inbox, per-inbox API tokens, and API-based creation/read/delete
 
 This includes basic abuse controls; it is not a replacement for a commercial spam-classification service. The `sender_rules` table and spam folder are extension points for SpamAssassin, Rspamd, or an external scorer.
 
@@ -205,6 +206,11 @@ PATCH  /api/messages/:id           DELETE /api/messages/:id
 GET    /api/messages/:id/raw       GET    /api/attachments/:id/download
 GET    /api/search
 GET    /api/users                  POST   /api/users
+GET    /api/temp-mailboxes         POST   /api/temp-mailboxes
+GET    /api/temp-mailboxes/:id     DELETE /api/temp-mailboxes/:id
+GET    /api/temp-mailboxes/:id/messages
+GET    /api/temp-mailboxes/:id/messages/:messageId
+GET    /api/temp-mailboxes/:id/attachments/:attachmentId
 ```
 
 Message query parameters: `mailbox`, `folder`, `search`, `unread`, `starred`, `hasAttachment`, `sender`, `recipient`, `dateFrom`, `dateTo`, `cursor`, and `limit`.
@@ -214,6 +220,32 @@ Errors have one format:
 ```json
 { "error": { "code": "MESSAGE_NOT_FOUND", "message": "The requested message was not found." } }
 ```
+
+### Temporary-mail API
+
+Owners and admins can use the Temp mail page with their normal session. External clients create an inbox with the server-wide `TEMP_MAIL_API_KEY`; the response returns a separate access token scoped to that one inbox. Store it when it is returned because it is only shown once.
+
+```bash
+# Create a persistent random address. localPart is optional.
+curl -X POST https://mail.aurens.app/api/temp-mailboxes \
+  -H "Authorization: Bearer $TEMP_MAIL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+# Use the accessToken from that response for every operation on the inbox.
+curl https://mail.aurens.app/api/temp-mailboxes/$MAILBOX_ID/messages \
+  -H "Authorization: Bearer $TEMP_MAIL_ACCESS_TOKEN"
+
+# Read the full sanitized HTML/text message and attachment metadata.
+curl https://mail.aurens.app/api/temp-mailboxes/$MAILBOX_ID/messages/$MESSAGE_ID \
+  -H "Authorization: Bearer $TEMP_MAIL_ACCESS_TOKEN"
+
+# Delete the disposable address and all of its stored mail immediately.
+curl -X DELETE https://mail.aurens.app/api/temp-mailboxes/$MAILBOX_ID \
+  -H "Authorization: Bearer $TEMP_MAIL_ACCESS_TOKEN"
+```
+
+Temporary addresses remain available until explicitly deleted. API clients may optionally supply `ttlMinutes` from 10–10080 when they intentionally want automatic expiry; expired addresses stop accepting SMTP delivery and the hourly retention job permanently removes their stored data.
 
 ## Mailbox and access administration
 

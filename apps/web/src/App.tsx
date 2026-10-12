@@ -1,12 +1,15 @@
 import { Mail, Moon, PenLine, RefreshCw, Search, SlidersHorizontal, Sun } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, api } from "./api";
+import { AccountSwitcher } from "./components/AccountSwitcher";
 import { ComposeMessage } from "./components/ComposeMessage";
+import { ConfirmActionDialog } from "./components/ConfirmActionDialog";
 import { CreateMailbox } from "./components/CreateMailbox";
 import { Login } from "./components/Login";
 import { MessageList } from "./components/MessageList";
 import { MessageReader } from "./components/MessageReader";
 import { MobileDock, MobileMenuButton, Sidebar } from "./components/Sidebar";
+import { TempMailPage } from "./components/TempMailPage";
 import type { Folder, Mailbox, MessageDetail, MessageSummary, SessionUser } from "./types";
 
 export function App() {
@@ -34,7 +37,11 @@ export function App() {
   const [createOpen, setCreateOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [replyTarget, setReplyTarget] = useState<MessageDetail>();
+  const [deletingMailbox, setDeletingMailbox] = useState(false);
+  const [confirmingMailboxRemoval, setConfirmingMailboxRemoval] = useState(false);
+  const [confirmingMessageDeletion, setConfirmingMessageDeletion] = useState(false);
   const [error, setError] = useState("");
+  const [section, setSection] = useState<"mail" | "temp">("mail");
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -94,16 +101,36 @@ export function App() {
   };
 
   const closeReader = () => { setSelectedId(undefined); setDetail(undefined); };
-  const selectMailbox = (id?: string) => { setMailboxId(id); closeReader(); setNavOpen(false); };
-  const selectFolder = (value: Folder) => { setFolder(value); setStarred(false); closeReader(); setNavOpen(false); };
-  const selectStarred = () => { setFolder("inbox"); setStarred(true); closeReader(); setNavOpen(false); };
+  const selectMailbox = (id?: string) => { setSection("mail"); setMailboxId(id); closeReader(); setNavOpen(false); };
+  const selectFolder = (value: Folder) => { setSection("mail"); setFolder(value); setStarred(false); closeReader(); setNavOpen(false); };
+  const selectStarred = () => { setSection("mail"); setFolder("inbox"); setStarred(true); closeReader(); setNavOpen(false); };
+  const selectTemp = () => { setSection("temp"); closeReader(); setNavOpen(false); };
   const openComposer = () => { setReplyTarget(undefined); setComposeOpen(true); };
   const toggleTheme = () => setTheme((current) => current === "dark" ? "light" : "dark");
   const logout = async () => { await api.logout().catch(() => undefined); setSession(null); };
   const refreshInbox = async () => { await Promise.all([loadMessages(), loadMailboxes()]); };
+  const removeMailbox = async () => {
+    if (!mailbox) return;
+    setDeletingMailbox(true); setError("");
+    try {
+      await api.deleteMailbox(mailbox.id);
+      setConfirmingMailboxRemoval(false);
+      setMailboxId(undefined); closeReader();
+      await loadMailboxes();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to remove this mail account.");
+    } finally { setDeletingMailbox(false); }
+  };
   const removeSelected = async () => {
-    if (!selectedId || !confirm("Permanently delete this message and all attachments? This cannot be undone.")) return;
-    await api.deleteMessage(selectedId); setMessages((items) => items.filter((item) => item.id !== selectedId)); closeReader();
+    if (!selectedId) return;
+    try {
+      await api.deleteMessage(selectedId);
+      setConfirmingMessageDeletion(false);
+      setMessages((items) => items.filter((item) => item.id !== selectedId));
+      closeReader();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to permanently delete this message.");
+    }
   };
 
   if (session === undefined) return <div className="boot-screen"><div className="brand-mark pulse">A</div></div>;
@@ -113,23 +140,26 @@ export function App() {
   const unread = mailboxes.reduce((sum, item) => sum + Number(item.unread_count), 0);
 
   return <div className="app-shell">
-    <Sidebar user={session} mailboxes={mailboxes} mailboxId={mailboxId} folder={folder} starred={starred} open={navOpen} theme={theme} onToggleTheme={toggleTheme} onClose={() => setNavOpen(false)} onLogout={() => void logout()} onSelectMailbox={selectMailbox} onSelectFolder={selectFolder} onSelectStarred={selectStarred} onCreateMailbox={() => setCreateOpen(true)} onCompose={openComposer} />
-    <main className={`mail-pane ${selectedId ? "has-reader" : ""}`}>
+    <Sidebar user={session} mailboxes={mailboxes} mailboxId={mailboxId} folder={folder} starred={starred} tempActive={section === "temp"} open={navOpen} theme={theme} onToggleTheme={toggleTheme} onClose={() => setNavOpen(false)} onLogout={() => void logout()} onSelectMailbox={selectMailbox} onSelectFolder={selectFolder} onSelectStarred={selectStarred} onSelectTemp={selectTemp} onCreateMailbox={() => setCreateOpen(true)} onCompose={openComposer} />
+    {section === "temp" ? <main className="temp-mail-pane"><header className="topbar temp-topbar"><div className="mobile-topline"><MobileMenuButton onClick={() => setNavOpen(true)} /><div className="mobile-identity"><span className="mobile-brand-mark"><Mail /></span><span><strong>Aurens</strong><small>Temp mail</small></span></div></div><div className="temp-topbar-spacer" /><AccountSwitcher mailboxes={mailboxes} mailboxId={mailboxId} canManage={session.role !== "member"} deleting={deletingMailbox} onSelect={selectMailbox} onAdd={() => setCreateOpen(true)} onRemove={() => setConfirmingMailboxRemoval(true)} onLogout={() => void logout()} /></header><TempMailPage /></main> : <main className={`mail-pane ${selectedId ? "has-reader" : ""}`}>
       <header className="topbar">
         <div className="mobile-topline"><MobileMenuButton onClick={() => setNavOpen(true)} /><div className="mobile-identity"><span className="mobile-brand-mark"><Mail /></span><span><strong>Aurens</strong><small>Mail</small></span></div><button className="mobile-theme" aria-label={`Use ${theme === "dark" ? "light" : "dark"} mode`} title={`Use ${theme === "dark" ? "light" : "dark"} mode`} onClick={toggleTheme}>{theme === "dark" ? <Sun /> : <Moon />}</button></div>
         <div className="search-box"><Search /><input aria-label="Search mail" placeholder="Search mail" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") setQuery(search.trim()); }} /><button aria-label="Run search" title="Search" onClick={() => setQuery(search.trim())}><SlidersHorizontal /></button></div>
         <button className="top-compose" onClick={openComposer}><PenLine /><span>New message</span></button>
+        <AccountSwitcher mailboxes={mailboxes} mailboxId={mailboxId} canManage={session.role !== "member"} deleting={deletingMailbox} onSelect={selectMailbox} onAdd={() => setCreateOpen(true)} onRemove={() => setConfirmingMailboxRemoval(true)} onLogout={() => void logout()} />
       </header>
       <section className="inbox-panel">
         <div className="inbox-heading"><div><p className="eyebrow">{starred ? "STARRED" : folder.toUpperCase()}</p><h1>{mailbox?.display_name || mailbox?.address || "All mailboxes"}</h1></div><div className="inbox-actions"><span aria-live="polite">{messages.length}{nextCursor ? "+" : ""} message{messages.length === 1 ? "" : "s"}</span><button className="refresh-button" aria-label="Refresh inbox" title="Refresh inbox" disabled={loading} onClick={() => void refreshInbox()}><RefreshCw className={loading ? "spin" : ""} /></button></div></div>
         {error && <div className="global-error" role="alert">{error}<button onClick={() => setError("")}>Dismiss</button></div>}
         <MessageList messages={messages} folder={folder} selectedId={selectedId} loading={loading} hasMore={Boolean(nextCursor)} onSelect={(id) => void selectMessage(id)} onStar={(item) => { void api.patchMessage(item.id, { isStarred: !item.is_starred }).then(() => setMessages((rows) => rows.map((row) => row.id === item.id ? { ...row, is_starred: !row.is_starred } : row))); }} onMore={() => nextCursor && void loadMessages(true, nextCursor)} />
       </section>
-      <MessageReader message={detail} loading={detailLoading} onClose={closeReader} onPatch={(patch) => void patchSelected(patch)} onDelete={() => void removeSelected()} onReply={(message) => { setReplyTarget(message); setComposeOpen(true); }} />
-    </main>
-    {!selectedId && <button className="mobile-compose-fab" aria-label="Compose new message" onClick={openComposer}><PenLine /><span>Compose</span></button>}
-    {!selectedId && <MobileDock folder={folder} starred={starred} unread={unread} onSelectFolder={selectFolder} onSelectStarred={selectStarred} onOpenMenu={() => setNavOpen(true)} />}
+      <MessageReader message={detail} loading={detailLoading} onClose={closeReader} onPatch={(patch) => void patchSelected(patch)} onDelete={() => setConfirmingMessageDeletion(true)} onReply={(message) => { setReplyTarget(message); setComposeOpen(true); }} />
+    </main>}
+    {section === "mail" && !selectedId && <button className="mobile-compose-fab" aria-label="Compose new message" onClick={openComposer}><PenLine /><span>Compose</span></button>}
+    {section === "mail" && !selectedId && <MobileDock folder={folder} starred={starred} unread={unread} onSelectFolder={selectFolder} onSelectStarred={selectStarred} onOpenMenu={() => setNavOpen(true)} />}
     {createOpen && <CreateMailbox onClose={() => setCreateOpen(false)} onCreate={async (address, name, catchAll) => { await api.createMailbox(address, name, catchAll); await loadMailboxes(); }} />}
     {composeOpen && <ComposeMessage mailboxes={mailboxes} {...(mailboxId ? { defaultMailboxId: mailboxId } : {})} {...(replyTarget ? { replyTo: replyTarget } : {})} onClose={() => { setComposeOpen(false); setReplyTarget(undefined); }} onSent={(sentMailboxId) => { setComposeOpen(false); setReplyTarget(undefined); setMailboxId(sentMailboxId); setFolder("sent"); setStarred(false); closeReader(); }} />}
+    {confirmingMailboxRemoval && mailbox && <ConfirmActionDialog eyebrow="REMOVE MAIL ACCOUNT" title={`Remove ${mailbox.display_name || mailbox.address}?`} description={`${mailbox.address} will stop receiving new mail. Existing messages stay available to administrators.`} confirmLabel="Remove account" busyLabel="Removing…" busy={deletingMailbox} onCancel={() => setConfirmingMailboxRemoval(false)} onConfirm={() => void removeMailbox()} />}
+    {confirmingMessageDeletion && selectedId && <ConfirmActionDialog eyebrow="PERMANENT DELETE" title="Delete this message forever?" description="The message and every attachment will be permanently deleted. This cannot be undone." confirmLabel="Delete forever" onCancel={() => setConfirmingMessageDeletion(false)} onConfirm={() => void removeSelected()} />}
   </div>;
 }

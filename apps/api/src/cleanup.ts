@@ -4,6 +4,24 @@ import { deleteObjects, listObjectKeys } from "./storage.js";
 
 export async function runRetentionCleanup(logger: { info: (value: unknown, message?: string) => void; error: (value: unknown, message?: string) => void }): Promise<void> {
   try {
+    const expiredTempObjects = await pool.query(
+      `SELECT m.raw_object_key AS object_key
+         FROM messages m JOIN mailboxes mb ON mb.id = m.mailbox_id
+        WHERE mb.is_temporary = true AND mb.expires_at <= now()
+       UNION ALL
+       SELECT m.text_object_key FROM messages m JOIN mailboxes mb ON mb.id = m.mailbox_id
+        WHERE mb.is_temporary = true AND mb.expires_at <= now() AND m.text_object_key IS NOT NULL
+       UNION ALL
+       SELECT m.html_object_key FROM messages m JOIN mailboxes mb ON mb.id = m.mailbox_id
+        WHERE mb.is_temporary = true AND mb.expires_at <= now() AND m.html_object_key IS NOT NULL
+       UNION ALL
+       SELECT a.object_key FROM attachments a JOIN messages m ON m.id = a.message_id JOIN mailboxes mb ON mb.id = m.mailbox_id
+        WHERE mb.is_temporary = true AND mb.expires_at <= now()`,
+    );
+    const expiredTempMailboxes = await pool.query(
+      "DELETE FROM mailboxes WHERE is_temporary = true AND expires_at <= now() RETURNING id",
+    );
+    await deleteObjects(expiredTempObjects.rows.map((row) => String(row.object_key)));
     const expired = await pool.query(
       `SELECT id, raw_object_key, text_object_key, html_object_key
          FROM messages
@@ -22,7 +40,7 @@ export async function runRetentionCleanup(logger: { info: (value: unknown, messa
     }
     await pool.query("DELETE FROM sessions WHERE expires_at <= now()");
     await pool.query("DELETE FROM processing_failures WHERE created_at < now() - interval '90 days'");
-    logger.info({ deleted }, "Retention cleanup completed");
+    logger.info({ deleted, expiredTempMailboxes: expiredTempMailboxes.rowCount ?? 0 }, "Retention cleanup completed");
   } catch (error) {
     logger.error({ error: error instanceof Error ? error.message : "Unknown cleanup error" }, "Retention cleanup failed");
   }

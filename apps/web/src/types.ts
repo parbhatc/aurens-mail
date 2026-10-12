@@ -11,6 +11,41 @@ export interface Mailbox {
   unread_count: number;
 }
 
+export interface TempMailbox {
+  id: string;
+  address: string;
+  display_name?: string | null;
+  displayName?: string | null;
+  expires_at?: string | null;
+  expiresAt?: string | null;
+  created_at?: string;
+  createdAt?: string;
+  message_count?: number;
+  unread_count?: number;
+}
+
+export interface TempMessageSummary {
+  id: string;
+  sender_name: string | null;
+  sender_address: string;
+  recipient_address: string;
+  subject: string | null;
+  preview: string;
+  received_at: string;
+  is_read: boolean;
+  has_attachments: boolean;
+  warning: string | null;
+}
+
+export interface TempMessageDetail extends TempMessageSummary {
+  recipients: string[];
+  cc: string[];
+  reply_to: string | null;
+  text: string;
+  html: string | null;
+  attachments: Attachment[];
+}
+
 export interface MessageSummary {
   id: string;
   sender_name: string | null;

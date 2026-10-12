@@ -1,4 +1,4 @@
-import { Archive, Inbox, LogOut, Mail, Menu, Moon, PenLine, Plus, Send, ShieldAlert, Star, Sun, Trash2, X } from "lucide-react";
+import { Archive, Clock3, Inbox, LogOut, Mail, Menu, Moon, PenLine, Plus, Send, ShieldAlert, Star, Sun, Trash2, X } from "lucide-react";
 import type { Folder, Mailbox, SessionUser } from "../types";
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
   mailboxId: string | undefined;
   folder: Folder;
   starred: boolean;
+  tempActive: boolean;
   open: boolean;
   theme: "light" | "dark";
   onToggleTheme: () => void;
@@ -16,6 +17,7 @@ interface Props {
   onLogout: () => void;
   onCreateMailbox: () => void;
   onSelectStarred: () => void;
+  onSelectTemp: () => void;
   onCompose: () => void;
 }
 
@@ -27,20 +29,21 @@ export function Sidebar(props: Props) {
       <div className="sidebar-brand"><div className="brand-mark small"><Mail size={19} /></div><span><strong>Aurens</strong><small>Private mail</small></span><button className="mobile-close" aria-label="Close navigation" onClick={props.onClose}><X /></button></div>
       <button className="sidebar-compose" onClick={() => { props.onCompose(); props.onClose(); }}><PenLine /><span>New message</span></button>
       <nav className="folder-nav" aria-label="Mail folders">
-        <button className={props.folder === "inbox" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("inbox")}><Inbox />Inbox{unread > 0 && <span className="count">{unread}</span>}</button>
-        <button className={props.starred ? "active" : ""} onClick={props.onSelectStarred}><Star />Starred</button>
-        <button className={props.folder === "sent" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("sent")}><Send />Sent</button>
-        <button className={props.folder === "spam" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("spam")}><ShieldAlert />Spam</button>
-        <button className={props.folder === "trash" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("trash")}><Trash2 />Trash</button>
+        <button aria-current={props.folder === "inbox" && !props.starred ? "page" : undefined} className={props.folder === "inbox" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("inbox")}><Inbox />Inbox{unread > 0 && <span className="count">{unread}</span>}</button>
+        <button aria-current={props.starred ? "page" : undefined} className={props.starred ? "active" : ""} onClick={props.onSelectStarred}><Star />Starred</button>
+        <button aria-current={props.folder === "sent" && !props.starred ? "page" : undefined} className={props.folder === "sent" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("sent")}><Send />Sent</button>
+        <button aria-current={props.folder === "spam" && !props.starred ? "page" : undefined} className={props.folder === "spam" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("spam")}><ShieldAlert />Spam</button>
+        <button aria-current={props.folder === "trash" && !props.starred ? "page" : undefined} className={props.folder === "trash" && !props.starred ? "active" : ""} onClick={() => props.onSelectFolder("trash")}><Trash2 />Trash</button>
+        {props.user.role !== "member" && <button aria-current={props.tempActive ? "page" : undefined} className={props.tempActive ? "active" : ""} onClick={props.onSelectTemp}><Clock3 />Temp mail</button>}
       </nav>
       <div className="mailbox-heading"><span>MAILBOXES</span>{props.user.role !== "member" && <button onClick={props.onCreateMailbox} aria-label="Create mailbox" title="Create mailbox"><Plus /></button>}</div>
       <nav className="mailbox-list" aria-label="Mailboxes">
-        <button className={!props.mailboxId ? "active" : ""} onClick={() => props.onSelectMailbox(undefined)}><Archive /><span>All mailboxes</span></button>
-        {props.mailboxes.filter((item) => item.is_active).map((item) => <button key={item.id} className={props.mailboxId === item.id ? "active" : ""} onClick={() => props.onSelectMailbox(item.id)}>
+        <button aria-current={!props.mailboxId ? "true" : undefined} className={!props.mailboxId ? "active" : ""} onClick={() => props.onSelectMailbox(undefined)}><Archive /><span>All mailboxes</span></button>
+        {props.mailboxes.filter((item) => item.is_active).map((item) => <button key={item.id} aria-current={props.mailboxId === item.id ? "true" : undefined} className={props.mailboxId === item.id ? "active" : ""} onClick={() => props.onSelectMailbox(item.id)}>
           <span className="mailbox-dot" /><span className="mailbox-label">{item.display_name || item.address.split("@")[0]}<small>{item.address}</small></span>{Number(item.unread_count) > 0 && <span className="count">{item.unread_count}</span>}
         </button>)}
       </nav>
-      <button className="theme-toggle" onClick={props.onToggleTheme}>{props.theme === "dark" ? <Sun /> : <Moon />}<span>{props.theme === "dark" ? "Light mode" : "Dark mode"}</span></button>
+      <button className="theme-toggle" aria-label={`Switch to ${props.theme === "dark" ? "light" : "dark"} mode`} onClick={props.onToggleTheme}>{props.theme === "dark" ? <Sun /> : <Moon />}<span>{props.theme === "dark" ? "Light mode" : "Dark mode"}</span></button>
       <div className="user-card"><div className="avatar">{(props.user.displayName || props.user.email)[0]?.toUpperCase()}</div><div><strong>{props.user.displayName || "Owner"}</strong><small>{props.user.email}</small></div><button onClick={props.onLogout} aria-label="Sign out" title="Sign out"><LogOut /></button></div>
     </aside>
   </>;
